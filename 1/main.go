@@ -6,10 +6,12 @@ import (
 	"math"
 	"os"
 	"strconv"
+
+	"github.com/magicmonkey/adventofcode/2021/util"
 )
 
 func main() {
-	lines := readInputFile()
+	lines := util.ReadInputFile()
 
 	fmt.Println("Part 1")
 	part1(lines)
@@ -18,7 +20,7 @@ func main() {
 }
 
 func part1(lines []string) {
-	linesNum := stringsToInts(lines)
+	linesNum := util.StringsToInts(lines)
 	var prevLine int64 = math.MaxInt64
 	increaseCounter := 0
 	for _, currLine := range linesNum {
