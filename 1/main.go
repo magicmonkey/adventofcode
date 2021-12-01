@@ -1,11 +1,8 @@
 package main
 
 import (
-	"bufio"
 	"fmt"
 	"math"
-	"os"
-	"strconv"
 
 	"github.com/magicmonkey/adventofcode/2021/util"
 )
@@ -33,7 +30,7 @@ func part1(lines []string) {
 }
 
 func part2(lines []string) {
-	linesNum := stringsToInts(lines)
+	linesNum := util.StringsToInts(lines)
 	var prevSum int64 = math.MaxInt64
 	var currSum int64
 
@@ -50,33 +47,4 @@ func part2(lines []string) {
 		prevSum = currSum
 	}
 	fmt.Println(increaseCounter)
-}
-
-func readInputFile() []string {
-	f, err := os.Open("input")
-	if err != nil {
-		panic(err)
-	}
-	defer f.Close()
-
-	var lines []string
-	scanner := bufio.NewScanner(f)
-	for scanner.Scan() {
-		lines = append(lines, scanner.Text())
-	}
-	if err = scanner.Err(); err != nil {
-		panic(err)
-	}
-	return lines
-}
-
-func stringsToInts(lines []string) (linesNum []int64) {
-	for _, line := range lines {
-		lineNum, err := strconv.ParseInt(line, 10, 64)
-		if err != nil {
-			panic(err)
-		}
-		linesNum = append(linesNum, lineNum)
-	}
-	return
 }
