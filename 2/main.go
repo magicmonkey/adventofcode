@@ -19,16 +19,10 @@ func main() {
 }
 
 func part1(lines []string) {
-	lineParser := regexp.MustCompile(`^([a-z]*) (\d*)$`)
-	var horiz int64 = 0
-	var depth int64 = 0
+	var horiz, depth int
 	for _, line := range lines {
-		parts := lineParser.FindStringSubmatch(line)
-		amount, err := strconv.ParseInt(parts[2], 10, 32)
-		if err != nil {
-			panic(err)
-		}
-		switch parts[1] {
+		command, amount := partsFromLine(line)
+		switch command {
 		case "forward":
 			horiz += amount
 		case "down":
@@ -39,19 +33,14 @@ func part1(lines []string) {
 			panic("Unknown command")
 		}
 	}
-	fmt.Printf("Horiz: %d\nDepth: %d\nResult: %d\n", horiz, depth, (horiz * depth))
+	fmt.Printf("Horiz: %d\nDepth: %d\n=== Result: %d ===\n", horiz, depth, (horiz * depth))
 }
 
 func part2(lines []string) {
-	lineParser := regexp.MustCompile(`^([a-z]*) (\d*)$`)
-	var horiz, depth, aim int64
+	var horiz, depth, aim int
 	for _, line := range lines {
-		parts := lineParser.FindStringSubmatch(line)
-		amount, err := strconv.ParseInt(parts[2], 10, 32)
-		if err != nil {
-			panic(err)
-		}
-		switch parts[1] {
+		command, amount := partsFromLine(line)
+		switch command {
 		case "forward":
 			horiz += amount
 			depth += (aim * amount)
@@ -63,7 +52,19 @@ func part2(lines []string) {
 			panic("Unknown command")
 		}
 	}
-	fmt.Printf("Horiz: %d\nDepth: %d\nResult: %d\n", horiz, depth, (horiz * depth))
+	fmt.Printf("Horiz: %d\nDepth: %d\nAim: %d\n=== Result: %d ===\n", horiz, depth, aim, (horiz * depth))
+}
+
+func partsFromLine(line string) (command string, amount int) {
+	lineParser := regexp.MustCompile(`^([a-z]*) (\d*)$`)
+	parts := lineParser.FindStringSubmatch(line)
+	command = parts[1]
+	amountTmp, err := strconv.ParseInt(parts[2], 10, 32)
+	if err != nil {
+		panic(err)
+	}
+	amount = int(amountTmp) // int64 to int conversion
+	return
 }
 
 func testInput() (lines []string) {
