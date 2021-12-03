@@ -1,17 +1,16 @@
 package main
 
 import (
+	"bytes"
 	"fmt"
-	"strconv"
 	"strings"
 
-	"github.com/magicmonkey/adventofcode/2021/util"
 	"github.com/mitchellh/copystructure"
 )
 
 func main() {
-	lines := util.ReadInputFile()
-	//lines := testInput()
+	//lines := util.ReadInputFile()
+	lines := testInput()
 	fmt.Println("Part 1")
 	part1(lines)
 	fmt.Println("Part 2")
@@ -19,49 +18,23 @@ func main() {
 }
 
 func part1(lines []string) {
-	numLines := len(lines)
-	inputLen := len(lines[0])
-
-	var inputChars [][]byte
-
-	inputChars = make([][]byte, numLines, numLines)
-
-	for i, line := range lines {
-		inputChars[i] = make([]byte, inputLen, inputLen)
-		chars := strings.Split(line, "")
-		for j, char := range chars {
-			if char[0] == '0' {
-				inputChars[i][j] = 0
-			} else {
-				inputChars[i][j] = 1
-			}
+	var gamma, epsilon int
+	for i, _ := range lines[0] {
+		var column []byte
+		for _, line := range lines {
+			column = append(column, line[i])
+		}
+		numZero := bytes.Count(column, []byte{'0'})
+		gamma *= 2
+		epsilon *= 2
+		if numZero < (len(lines) / 2) {
+			gamma++
+		}
+		if numZero > (len(lines) / 2) {
+			epsilon++
 		}
 	}
-
-	var gamma, epsilon string
-	for i := 0; i < inputLen; i++ {
-		var numZero, numOne int
-		for line := 0; line < numLines; line++ {
-			if inputChars[line][i] == 0 {
-				numZero++
-			} else if inputChars[line][i] == 1 {
-				numOne++
-			}
-		}
-		if numZero > numOne {
-			gamma = gamma + "0"
-			epsilon = epsilon + "1"
-		} else {
-			gamma = gamma + "1"
-			epsilon = epsilon + "0"
-		}
-	}
-
-	var gammaInt, epsilonInt int64
-	gammaInt, _ = strconv.ParseInt(gamma, 2, 64)
-	epsilonInt, _ = strconv.ParseInt(epsilon, 2, 64)
-
-	fmt.Println(gamma, epsilon, gammaInt, epsilonInt, gammaInt*epsilonInt)
+	fmt.Println(gamma, epsilon, gamma*epsilon)
 }
 
 func part2(lines []string) {
