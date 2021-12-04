@@ -52,6 +52,7 @@ func part2(balls []int, cards []tCard) {
 	var lastWinner tCard
 	var lastBall int
 
+outer:
 	for ballnum = 4; ballnum <= len(balls); ballnum++ {
 		winner = false
 		for {
@@ -60,6 +61,9 @@ func part2(balls []int, cards []tCard) {
 				lastWinner = cards[winningCard]
 				lastBall = ballnum
 				cards = removeCard(cards, winningCard)
+				if len(cards) == 0 {
+					break outer
+				}
 			} else {
 				break
 			}
