@@ -10,28 +10,66 @@ import (
 
 type tFish int64
 
-var fishs []tFish
-
 func main() {
 	//lines := testInput()
 	lines := util.ReadInputFile()
-	fishs = parseInput(lines[0])
 
 	fmt.Println("Part 1")
-	part1(fishs, 80)
+	part1(lines)
 
-	fmt.Println("Part 2 - this ain't gonna complete")
-	part1(fishs, 256)
+	fmt.Println("Part 2")
+	part2(lines)
+
 }
 
-func part1(fishs []tFish, numIterations int) {
-	for i := 1; i <= numIterations; i++ {
-		fishs = iterate(fishs)
+// A count of fish at each age on a given day
+type tDay [9]int64
+
+func part2(lines []string) {
+	var fishs []tFish
+
+	var currDay tDay
+	fishs = parseInput(lines[0])
+
+	// Initial state
+	for _, fish := range fishs {
+		currDay[fish]++
+	}
+
+	for i := 1; i <= 256; i++ {
+		currDay = iterateDay(currDay)
+	}
+
+	var numFish int64
+	for _, fishAtAge := range currDay {
+		numFish += fishAtAge
+	}
+	fmt.Println(numFish)
+}
+
+func iterateDay(day tDay) (retval tDay) {
+	retval[0] = day[1]
+	retval[1] = day[2]
+	retval[2] = day[3]
+	retval[3] = day[4]
+	retval[4] = day[5]
+	retval[5] = day[6]
+	retval[6] = day[7] + day[0]
+	retval[7] = day[8]
+	retval[8] = day[0]
+	return
+}
+
+func part1(lines []string) {
+	var fishs []tFish
+	fishs = parseInput(lines[0])
+	for i := 1; i <= 80; i++ {
+		fishs = iterateEachFish(fishs)
 	}
 	fmt.Println(len(fishs))
 }
 
-func iterate(fishs []tFish) (retval []tFish) {
+func iterateEachFish(fishs []tFish) (retval []tFish) {
 	var numSpawned int
 	for _, fish := range fishs {
 		fish--
