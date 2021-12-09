@@ -3,40 +3,37 @@ package main
 import (
 	"fmt"
 	"strconv"
-
-	"github.com/magicmonkey/adventofcode/2021/util"
+	//"github.com/magicmonkey/adventofcode/2021/util"
 )
 
 func main() {
-	//lines := testInput()
-	lines := util.ReadInputFile()
+	lines := testInput()
+	//lines := util.ReadInputFile()
 	part1(lines)
+	//part2(lines)
 }
 
 func part1(lines []string) {
-	var heightmap [][]int
-
-	// Allocate memory
-	var sizeX int = len(lines[0])
-	var sizeY int = len(lines)
-	heightmap = make([][]int, sizeX)
-	for i := range heightmap {
-		heightmap[i] = make([]int, sizeY)
-	}
-
-	// Read input
-	for y, row := range lines {
-		for x, heightStr := range row {
-			heightInt, err := strconv.ParseInt(string(heightStr), 10, 32)
-			if err != nil {
-				panic(err)
-			}
-			heightmap[x][y] = int(heightInt)
-		}
-	}
+	heightmap, sizeX, sizeY := parseInput(lines)
+	minima := findMinima(heightmap, sizeX, sizeY)
 
 	// Analyse height map
 	var risk int
+	for _, coord := range minima {
+		risk += heightmap[coord.x][coord.y] + 1
+	}
+	fmt.Println(risk)
+}
+
+func part2(lines []string) {
+}
+
+type tCoord struct {
+	x int
+	y int
+}
+
+func findMinima(heightmap [][]int, sizeX int, sizeY int) (retval []tCoord) {
 	for x, col := range heightmap {
 		for y, height := range col {
 			//fmt.Printf("Checking %d,%d (%d)... ", x, y, height)
@@ -80,11 +77,32 @@ func part1(lines []string) {
 					continue
 				}
 			}
-			//fmt.Println("Yes")
-			risk += height + 1
+			retval = append(retval, tCoord{x: x, y: y})
 		}
 	}
-	fmt.Println(risk)
+	return
+}
+
+func parseInput(lines []string) (heightmap [][]int, sizeX int, sizeY int) {
+	// Allocate memory
+	sizeX = len(lines[0])
+	sizeY = len(lines)
+	heightmap = make([][]int, sizeX)
+	for i := range heightmap {
+		heightmap[i] = make([]int, sizeY)
+	}
+
+	// Read input
+	for y, row := range lines {
+		for x, heightStr := range row {
+			heightInt, err := strconv.ParseInt(string(heightStr), 10, 32)
+			if err != nil {
+				panic(err)
+			}
+			heightmap[x][y] = int(heightInt)
+		}
+	}
+	return
 }
 
 func testInput() []string {
