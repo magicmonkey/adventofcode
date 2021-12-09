@@ -2,15 +2,18 @@ package main
 
 import (
 	"fmt"
+	"github.com/magicmonkey/adventofcode/2021/util"
+	"sort"
 	"strconv"
-	//"github.com/magicmonkey/adventofcode/2021/util"
 )
 
 func main() {
-	lines := testInput()
-	//lines := util.ReadInputFile()
+	//lines := testInput()
+	lines := util.ReadInputFile()
+	fmt.Println("Part 1")
 	part1(lines)
-	//part2(lines)
+	fmt.Println("Part 2")
+	part2(lines)
 }
 
 func part1(lines []string) {
@@ -26,6 +29,95 @@ func part1(lines []string) {
 }
 
 func part2(lines []string) {
+	heightmap, sizeX, sizeY := parseInput(lines)
+	minima := findMinima(heightmap, sizeX, sizeY)
+
+	var sizes []int
+	for _, minimum := range minima {
+		size := findBasinSize(minimum, heightmap, sizeX, sizeY)
+		sizes = append(sizes, size)
+	}
+
+	sort.Sort(sort.Reverse(sort.IntSlice(sizes)))
+
+	fmt.Println(sizes[0] * sizes[1] * sizes[2])
+
+}
+
+func findBasinSize(coord tCoord, heightmap [][]int, sizeX int, sizeY int) int {
+	// Allocate memory
+	visited := make([][]bool, sizeX)
+	for i := range visited {
+		visited[i] = make([]bool, sizeY)
+	}
+	isInBasin := make([][]bool, sizeX)
+	for i := range isInBasin {
+		isInBasin[i] = make([]bool, sizeY)
+	}
+
+	visit(coord, heightmap, &visited, &isInBasin, sizeX, sizeY)
+
+	size := countTruths(isInBasin)
+
+	//renderBasin(heightmap, isInBasin)
+	return size
+}
+
+func countTruths(matrix [][]bool) (retval int) {
+	for _, row := range matrix {
+		for _, el := range row {
+			if el {
+				retval++
+			}
+		}
+	}
+	return
+}
+
+func visit(coord tCoord, heightmap [][]int, visited *[][]bool, isInBasin *[][]bool, sizeX int, sizeY int) {
+
+	if heightmap[coord.x][coord.y] == 9 {
+		return
+	}
+
+	(*visited)[coord.x][coord.y] = true
+	(*isInBasin)[coord.x][coord.y] = true
+
+	// Look right
+	if coord.x < (sizeX-1) && !(*visited)[coord.x+1][coord.y] && heightmap[coord.x][coord.y] < heightmap[coord.x+1][coord.y] {
+		visit(tCoord{x: coord.x + 1, y: coord.y}, heightmap, visited, isInBasin, sizeX, sizeY)
+	}
+
+	// Look up
+	if coord.y > 0 && !(*visited)[coord.x][coord.y-1] && heightmap[coord.x][coord.y] < heightmap[coord.x][coord.y-1] {
+		visit(tCoord{x: coord.x, y: coord.y - 1}, heightmap, visited, isInBasin, sizeX, sizeY)
+	}
+
+	// Look left
+	if coord.x > 0 && !(*visited)[coord.x-1][coord.y] && heightmap[coord.x][coord.y] < heightmap[coord.x-1][coord.y] {
+		visit(tCoord{x: coord.x - 1, y: coord.y}, heightmap, visited, isInBasin, sizeX, sizeY)
+	}
+
+	// Look down
+	if coord.y < (sizeY-1) && !(*visited)[coord.x][coord.y+1] && heightmap[coord.x][coord.y] < heightmap[coord.x][coord.y+1] {
+		visit(tCoord{x: coord.x, y: coord.y + 1}, heightmap, visited, isInBasin, sizeX, sizeY)
+	}
+}
+
+func renderBasin(heightmap [][]int, isInBasin [][]bool) {
+	var size int
+	for x, row := range heightmap {
+		for y, height := range row {
+			if isInBasin[x][y] {
+				fmt.Printf("-%d-", height)
+				size++
+			} else {
+				fmt.Printf(" %d ", height)
+			}
+		}
+		fmt.Println("")
+	}
+	fmt.Println("===", size, "===")
 }
 
 type tCoord struct {
