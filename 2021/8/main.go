@@ -2,9 +2,10 @@ package main
 
 import (
 	"fmt"
-	"github.com/magicmonkey/adventofcode/2021/util"
 	"strconv"
 	"strings"
+
+	"github.com/magicmonkey/adventofcode/2021/util"
 )
 
 func main() {
