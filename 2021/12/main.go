@@ -2,14 +2,17 @@ package main
 
 import (
 	"fmt"
-	"github.com/mitchellh/copystructure"
+	"github.com/magicmonkey/adventofcode/2021/util"
 	"strings"
 )
 
 func main() {
-	input := testInput2()
+	//input := testInput3()
+	input := util.ReadInputFile()
 	fmt.Println("Part 1")
 	part1(input)
+	fmt.Println("Part 2")
+	part2(input)
 }
 
 type tNode struct {
@@ -20,40 +23,111 @@ var nodes map[string]*tNode
 var numRoutes int
 
 func part1(lines []string) {
+	numRoutes = 0
 	buildGraph(lines)
 
-	visited := make(map[string]bool)
-	nextStep("start", visited)
+	var path []string
+	nextStep("start", path)
 
 	fmt.Println(numRoutes)
 
 }
 
-func nextStep(nodeName string, visited map[string]bool) {
+func part2(lines []string) {
+	numRoutes = 0
+	buildGraph(lines)
+
+	var path []string
+	nextStep2("start", path)
+
+	fmt.Println(numRoutes)
+
+}
+
+func nextStep2(nodeName string, path []string) {
+	path = append(path, nodeName)
 	n := nodes[nodeName]
 	for _, next := range n.next {
-		nextVisitedTmp, _ := copystructure.Copy(visited)
-		nextVisited := nextVisitedTmp.(map[string]bool)
-		fmt.Printf("%s - %s ... ", nodeName, next)
+		var thisPath []string
+		thisPath = append([]string{}, path...) // Deep copy
 		if next == "start" {
-			fmt.Println("No - start")
 			continue
 		} else if next == "end" {
-			fmt.Println("end")
+			thisPath = append(thisPath, "end")
+			//fmt.Println(thisPath)
 			numRoutes++
-			return
+			continue
 		} else {
-			if !nextVisited[next] {
-				fmt.Println("Visiting...")
-				if next[0] >= 97 { // lower case
-					nextVisited[next] = true
-				}
-				nextStep(next, nextVisited)
-			} else {
-				fmt.Println("No (Already been)")
+			if canVisit(next, thisPath) {
+				nextStep2(next, thisPath)
 			}
 		}
 	}
+}
+
+func canVisit(next string, path []string) bool {
+	if isSmallCave(next) {
+		// Check if any lower case caves have been visited twice
+		if smallCaveTwice(path) {
+			if visited(next, path) {
+				return false
+			}
+		}
+	}
+	return true
+}
+
+func smallCaveTwice(path []string) bool {
+	for i, p := range path {
+		if !isSmallCave(p) {
+			continue
+		}
+		for j, q := range path {
+			if p == q && i != j {
+				return true
+			}
+		}
+	}
+	return false
+}
+
+func isSmallCave(name string) bool {
+	if name[0] >= 97 { // lower case
+		return true
+	} else {
+		return false
+	}
+}
+
+func nextStep(nodeName string, path []string) {
+	path = append(path, nodeName)
+	n := nodes[nodeName]
+	for _, next := range n.next {
+		if next == "start" {
+			continue
+		} else if next == "end" {
+			path = append(path, "end")
+			//fmt.Println(path)
+			numRoutes++
+			continue
+		} else {
+			if isSmallCave(next) {
+				if visited(next, path) {
+					continue
+				}
+			}
+			nextStep(next, path)
+		}
+	}
+}
+
+func visited(nodeName string, path []string) bool {
+	for _, p := range path {
+		if p == nodeName {
+			return true
+		}
+	}
+	return false
 }
 
 func buildGraph(lines []string) {
