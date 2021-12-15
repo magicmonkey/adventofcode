@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strconv"
 
+	"github.com/RyanCarrier/dijkstra"
 	"github.com/magicmonkey/adventofcode/2021/util"
 )
 
@@ -12,61 +13,74 @@ func main() {
 	lines := util.ReadInputFile()
 	fmt.Println("Part 1")
 	part1(lines)
+	fmt.Println("Part 2")
+	part2(lines)
 }
 
 func part1(lines []string) {
 	grid := parseInput(lines)
-	//grid.print()
-
-	risk := grid.takeStepsFrom(0, 0, 0)
-	fmt.Println("Final risk:", risk)
-
+	grid.route()
 }
 
-func (g *tGrid) takeStepsFrom(posX int, posY int, risk tRisk) (finalRisk tRisk) {
-	//fmt.Printf("Trying (%d,%d) == %d\n", posX, posY, g.get(posX, posY))
+func part2(lines []string) {
+	startGrid := parseInput(lines)
+	grid := startGrid.replicate()
+	grid.route()
+}
+func (g *tGrid) route() {
+	graph := dijkstra.NewGraph()
 
-	var risk2 tRisk
-	if posX == 0 && posY == 0 {
-		risk2 = risk
-	} else {
-		risk2 = risk + g.get(posX, posY)
+	// Add the vertices
+	for x := 0; x < g.sizeX; x++ {
+		for y := 0; y < g.sizeY; y++ {
+			graph.AddVertex((y * g.sizeY) + x)
+		}
 	}
 
-	// if at the end, do nothing
-	if posX == g.sizeX && posY == g.sizeY {
-		//fmt.Println("At the end")
-		finalRisk = risk2
-		return
+	// Add the weights/distances
+	var srcID, destID int
+	for x := 0; x < g.sizeX; x++ {
+		for y := 0; y < g.sizeY; y++ {
+			srcID = (y * g.sizeY) + x
+			if x == 0 {
+				destID = srcID + 1
+				graph.AddArc(srcID, destID, g.get(x+1, y))
+			} else if x == g.sizeX-1 {
+				destID = srcID - 1
+				graph.AddArc(srcID, destID, g.get(x-1, y))
+			} else {
+				destID = srcID + 1
+				graph.AddArc(srcID, destID, g.get(x+1, y))
+				destID = srcID - 1
+				graph.AddArc(srcID, destID, g.get(x-1, y))
+			}
+			if y == 0 {
+				destID = srcID + g.sizeY
+				graph.AddArc(srcID, destID, g.get(x, y+1))
+			} else if y == g.sizeY-1 {
+				destID = srcID - g.sizeY
+				graph.AddArc(srcID, destID, g.get(x, y-1))
+			} else {
+				destID = srcID + g.sizeY
+				graph.AddArc(srcID, destID, g.get(x, y+1))
+				destID = srcID - g.sizeY
+				graph.AddArc(srcID, destID, g.get(x, y-1))
+			}
+		}
 	}
 
-	// if on the right wall, step down
-	if posX == g.sizeX {
-		//fmt.Println("Stepping down")
-		finalRisk = g.takeStepsFrom(posX, posY+1, risk2)
-		return
+	path, err := graph.Shortest(0, (g.sizeX*g.sizeY)-1)
+	if err != nil {
+		panic(err)
 	}
 
-	// if on the lower wall, step right
-	if posY == g.sizeY {
-		//fmt.Println("Stepping right")
-		finalRisk = g.takeStepsFrom(posX+1, posY, risk2)
-		return
+	var score int64
+	for _, p := range path.Path[1:] {
+		x := int(p % g.sizeY)
+		y := int(p / g.sizeY)
+		score += g.get(x, y)
 	}
-
-	// otherwise, try both ways
-	//fmt.Println("Trying right")
-	r1 := g.takeStepsFrom(posX+1, posY, risk2)
-
-	//fmt.Println("Trying down")
-	r2 := g.takeStepsFrom(posX, posY+1, risk2)
-
-	if r1 < r2 {
-		finalRisk = r1
-	} else {
-		finalRisk = r2
-	}
-	return
+	fmt.Println(score)
 }
 
 func parseInput(lines []string) (retval tGrid) {
