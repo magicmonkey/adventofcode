@@ -1,192 +1,224 @@
 package main
 
 import (
-	"encoding/binary"
+	"bytes"
 	"encoding/hex"
 	"fmt"
+	"github.com/magicmonkey/adventofcode/2021/util"
 	"math"
-	"math/bits"
 )
 
 func main() {
-	lines := testInput()
-	fmt.Println("Part 1")
+	//lines := testInput()
+	lines := util.ReadInputFile()
+	fmt.Println("Parts 1 and 2")
 	part1(lines)
 }
+
+type tPacket struct {
+	version uint64
+	typeId  uint64
+	value   uint64
+	op      uint64
+	packets []tPacket
+}
+
+var versionSum uint64
 
 func part1(lines []string) {
 	for _, line := range lines {
 		fmt.Println("---------")
-		fmt.Println(line)
-		processPacket([]byte(line), 0)
+		//fmt.Println(line)
+
+		versionSum = 0
+
+		content, err := hex.DecodeString(line)
+		if err != nil {
+			panic(err)
+		}
+		b := bytes.NewBuffer(content)
+		p, _ := processPacket(b, 0)
+		fmt.Println("=== Version sum", versionSum)
+
+		fmt.Println("=== Value", evaluate(p))
 	}
 }
 
-func processPacket(line []byte, startPos int) (newPos int) {
-	p, newPos := processPacketHeader(line, startPos)
-	fmt.Println("")
-	fmt.Println("Version", p.version, "and type", p.typeId)
-	switch p.typeId {
-	case 4:
-		fmt.Println("* Literal packet")
-		var literalBytes []byte
-		literalBytes, newPos = processLiteral(p, newPos)
-		fmt.Println(literalBytes)
-	default:
-		fmt.Println("* Operator packet")
-		newPos = processOperator(p, newPos)
+func evaluate(packet tPacket) (val uint64) {
+	switch packet.typeId {
+
+	case 0: // Sum
+		for _, p := range packet.packets {
+			val += evaluate(p)
+		}
+
+	case 1: // Multiply
+		val = 1
+		for _, p := range packet.packets {
+			v := evaluate(p)
+			val *= v
+		}
+
+	case 2: // Minimum
+		val = math.MaxInt64
+		for _, p := range packet.packets {
+			v := evaluate(p)
+			if v < val {
+				val = v
+			}
+		}
+
+	case 3: // Maximum
+		val = 0
+		for _, p := range packet.packets {
+			v := evaluate(p)
+			if v > val {
+				val = v
+			}
+		}
+
+	case 4: // Literal value
+		val = packet.value
+
+	case 5: // Greater than
+		v1 := evaluate(packet.packets[0])
+		v2 := evaluate(packet.packets[1])
+		if v1 > v2 {
+			val = 1
+		} else {
+			val = 0
+		}
+
+	case 6: // Less than
+		v1 := evaluate(packet.packets[0])
+		v2 := evaluate(packet.packets[1])
+		if v1 < v2 {
+			val = 1
+		} else {
+			val = 0
+		}
+
+	case 7: // Equal to
+		v1 := evaluate(packet.packets[0])
+		v2 := evaluate(packet.packets[1])
+		if v1 == v2 {
+			val = 1
+		} else {
+			val = 0
+		}
+
 	}
 	return
 }
 
-func processOperator(packet tPacket, pos int) int {
-	lengthType, pos := extractBits8(packet.contents, pos, 1)
-	fmt.Println("length type", lengthType)
+func processPacket(b *bytes.Buffer, startPos uint32) (packet tPacket, pos uint32) {
+	pos = startPos
+	var version, typeId uint64
+	version, pos = extractBits(b.Bytes(), pos, 3)
+	typeId, pos = extractBits(b.Bytes(), pos, 3)
+	versionSum += version
+
+	switch typeId {
+	case 4:
+		packet, pos = processLiteral(b, pos)
+	default:
+		packet, pos = processOperator(b, pos)
+	}
+
+	packet.version = version
+	packet.typeId = typeId
+	return
+}
+
+func processOperator(b *bytes.Buffer, startPos uint32) (packet tPacket, pos uint32) {
+	pos = startPos
+	lengthType, pos := extractBits(b.Bytes(), pos, 1)
+
+	var p tPacket
 	switch lengthType {
+
 	case 0:
-		var length uint16
-		length, pos = extractBits16(packet.contents, pos, 15)
-		fmt.Println("Length of subs", length, "and pos is", pos)
+		var totalLength uint64
+		totalLength, pos = extractBits(b.Bytes(), pos, 15)
+		end := pos + uint32(totalLength)
+		for pos < end {
+			p, pos = processPacket(b, pos)
+			packet.packets = append(packet.packets, p)
 
-		endPoint := int(length) + pos
-		fmt.Println("Endpoint is", endPoint)
-
-		for pos < endPoint {
-			fmt.Println("Reading packet from", pos)
-			pos = processPacket(packet.contents, pos)
-			fmt.Println("After reading packet, pos is", pos)
 		}
 
 	case 1:
-		var numSubs uint16
-		numSubs, pos = extractBits16(packet.contents, pos, 11)
-		fmt.Println("Num subs", numSubs)
-
+		var numSubs uint64
+		numSubs, pos = extractBits(b.Bytes(), pos, 11)
 		for numSubs > 0 {
 			numSubs--
-			fmt.Println("Processing sub packet...")
-			pos = processPacket(packet.contents, pos)
-		}
+			p, pos = processPacket(b, pos)
+			packet.packets = append(packet.packets, p)
 
+		}
 	}
 
-	fmt.Println("Leaving operator packet, with pos", pos)
-	return pos
+	return
 }
 
-func processLiteral(packet tPacket, pos int) ([]byte, int) {
-	var b uint8
-	var all []byte
-	var okToContinue bool = true
-
-	fmt.Println(" ... looking at literal from pos", pos)
-
+func processLiteral(b *bytes.Buffer, startPos uint32) (packet tPacket, pos uint32) {
+	pos = startPos
+	var val uint64
+	okToContinue := true
 	for okToContinue {
-		b, pos = extractBits8(packet.contents, pos, 5)
-		all = append(all, b)
-		if b&0b00010000 > 0 {
+		val = val << 4
+		var nextBits uint64
+		nextBits, pos = extractBits(b.Bytes(), pos, 5)
+		if nextBits&0b00010000 > 0 {
 			okToContinue = true
 		} else {
 			okToContinue = false
 		}
+		val |= (nextBits & 0b00001111)
 	}
+	packet.value = val
+	return
+}
 
-	/*
-		// Align pos to a 4-bit boundary
-		for pos%4 > 0 {
-			pos++
+func extractBits(bytes []byte, bit_start uint32, length uint32) (bits uint64, endPos uint32) {
+	if length > 64 {
+		panic("length too long" + string(length))
+	}
+	var res uint64 = 0
+	for i := bit_start; i < bit_start+length; i++ {
+		b, _ := extractBit(bytes, i)
+		if b {
+			res = 2*res + 1
+		} else {
+			res = res * 2
 		}
-	*/
-
-	return all, pos
-}
-
-type tPacket struct {
-	version  uint8
-	typeId   uint8
-	contents []byte
-}
-
-type tPacket4 struct {
-	tPacket
-	literal []byte
-}
-
-func processPacketHeader(packet []byte, startPos int) (tPacket, int) {
-	b, _ := hex.DecodeString(string(packet))
-	p := tPacket{}
-
-	pos := startPos
-	p.version, pos = extractBits8(b, pos, 3)
-	p.typeId, pos = extractBits8(b, pos, 3)
-	p.contents = b
-	return p, pos
-}
-
-func extractBits16(src []byte, pos int, numBits int) (retval uint16, newPos int) {
-	newPos = pos + numBits
-
-	if numBits > 16 {
-		panic("Can only read up to 16 bits")
 	}
-
-	// Extract 4 bytes, for up to 16 bits across a boundary (should be 3 bytes but we only work in powers of 2)
-	byteNum := int(pos / 8)
-	modifiedPos := pos % 8
-	var b uint32
-	src = append(src, []byte{0, 0, 0, 0, 0, 0, 0}...)
-	b = binary.BigEndian.Uint32(src[byteNum : byteNum+4])
-
-	mask := uint32(math.Pow(2, float64(numBits))) - 1
-	retval = uint16(uint32(bits.RotateLeft32(b, -1*(32-(numBits+modifiedPos)))) & mask)
-
-	/*
-		fmt.Printf("Src %#v\n", src)
-		fmt.Printf("byteNum %#v\n", byteNum)
-		fmt.Printf("b %#v\n", b)
-		fmt.Printf("mask %#v\n", mask)
-		fmt.Printf("retval %#v\n", retval)
-	*/
-	return
+	return res, bit_start + length
 }
 
-func extractBits8(src []byte, pos int, numBits int) (retval uint8, newPos int) {
-	newPos = pos + numBits
-
-	if numBits > 8 {
-		panic("Can only read up to 8 bits")
-	}
-
-	// Extract 2 bytes, for up to 8 bits across a boundary
-	byteNum := int(pos / 8)
-	modifiedPos := pos % 8
-	var b uint16
-	if len(src) < byteNum+2 {
-		src = append(src, []byte{0, 0}...)
-	}
-	b = binary.BigEndian.Uint16(src[byteNum : byteNum+2])
-
-	mask := uint16(math.Pow(2, float64(numBits))) - 1
-	retval = uint8(uint16(bits.RotateLeft16(b, -1*(16-(numBits+modifiedPos)))) & mask)
-
-	/*
-		fmt.Printf("Src %#v\n", src)
-		fmt.Printf("byteNum %#v\n", byteNum)
-		fmt.Printf("b %#v\n", b)
-		fmt.Printf("mask %#v\n", mask)
-		fmt.Printf("retval %#v\n", retval)
-	*/
-	return
+func extractBit(b []byte, i uint32) (bool, uint32) {
+	idx, offset := (i / 8), (i % 8)
+	return (b[idx] & (1 << uint(7-offset))) != 0, i + 1
 }
 
 func testInput() []string {
 	return []string{
-		"D2FE28",
-		"38006F45291200",
-		"EE00D40C823060",
-		"8A004A801A8002F478",
-		"620080001611562C8802118E34",
-		"C0015000016115A2E0802F182340",
-		"A0016C880162017C3686B18A3D4780",
+		/*
+			"D2FE28",
+			"38006F45291200",
+			"EE00D40C823060",
+			"8A004A801A8002F478",
+			"620080001611562C8802118E34",
+			"C0015000016115A2E0802F182340",
+			"A0016C880162017C3686B18A3D4780",
+		*/
+		"C200B40A82",
+		"04005AC33890",
+		"880086C3E88112",
+		"CE00C43D881120",
+		"D8005AC2A8F0",
+		"F600BC2D8F",
+		"9C005AC2F8F0",
+		"9C0141080250320F1802104A08",
 	}
 }
