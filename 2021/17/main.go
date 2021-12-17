@@ -2,19 +2,19 @@ package main
 
 import (
 	"fmt"
-	//"github.com/magicmonkey/adventofcode/2021/util"
+	"github.com/magicmonkey/adventofcode/2021/util"
 	"math"
 	"regexp"
 	"strconv"
 )
 
 func main() {
-	//lines := util.ReadInputFile()
-	lines := testInput()
+	lines := util.ReadInputFile()
+	//lines := testInput()
 	fmt.Println("Part 1")
 	part1(lines)
-	//fmt.Println("Part 2")
-	//part2(lines)
+	fmt.Println("Part 2")
+	part2(lines)
 }
 
 var area struct {
@@ -50,6 +50,33 @@ func part1(lines []string) {
 	}
 
 	fmt.Println(maxHeight)
+
+}
+
+func part2(lines []string) {
+	parseInput(lines)
+
+	minY := area.y1
+	if area.y2 < minY {
+		minY = area.y2
+	}
+
+	maxX := area.x1
+	if area.x2 > maxX {
+		maxX = area.x2
+	}
+
+	var num int
+	for tryX := 1; tryX <= maxX; tryX++ {
+		for tryY := minY; tryY < -1*minY; tryY++ {
+			success, _ := try(tryX, tryY)
+			if success {
+				num++
+			}
+		}
+	}
+
+	fmt.Println(num)
 
 }
 
@@ -106,9 +133,6 @@ func step(startVelX int, startVelY int) (hit bool, velX int, velY int) {
 		return false, velX, velY
 	}
 	return true, velX, velY
-}
-
-func part2(lines []string) {
 }
 
 func parseInput(lines []string) {
