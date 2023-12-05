@@ -67,6 +67,25 @@ def part1(fname: str):
     print(f"Lowest is {lowest}")
 
 
+def part2(fname: str):
+    seeds, mappings = parse(fname)
+    lowest = sys.maxsize
+    for i in range(0, len(seeds), 2):
+        print(f"Trying seed range {i} which starts at {seeds[i]} and is size {seeds[i+1]}")
+        for j in range(seeds[i], seeds[i]+seeds[i+1]):
+            next_type = 'seed'
+            this_num = j
+            while next_type != "location":
+                n = mappings[next_type].find_next(this_num)
+                next_type = mappings[next_type].dest
+                this_num = n
+            if n < lowest:
+                lowest = n
+    print(f"Lowest is {lowest}")
+
+
 if __name__ == '__main__':
     #part1("test.txt")
-    part1("input.txt")
+    #part1("input.txt")
+    #part2("test.txt")
+    part2("input.txt")
