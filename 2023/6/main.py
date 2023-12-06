@@ -29,7 +29,27 @@ def part1(fname: str):
     print(output)
     
 
+def part2(fname: str):
+    with open(fname) as file:
+        lines = file.readlines()
+    time = int(lines[0].split(":")[1].strip().replace(" ", ""))
+    dist = int(lines[1].split(":")[1].strip().replace(" ", ""))
+
+    # Find left boundary
+    boundary = 0
+    for i in range(0, int(time/2)):
+        boundary = i
+        if distance(time-i, i) > dist:
+            break
+
+    # Right boundary is the same as left, and correct for off-by-one error
+
+    print(time - (2*boundary) + 1)
+    
+
 if __name__ == '__main__':
     #part1("test.txt")
-    part1("input.txt")
+    #part1("input.txt")
+    #part2("test.txt")
+    part2("input.txt")
 
