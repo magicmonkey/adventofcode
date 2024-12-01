@@ -17,12 +17,9 @@ func MustInt(s string) int {
 	return numberInt
 }
 
-func main() {
-	fmt.Println("Starting...")
-
+func ParseFile(fname string) (list1, list2 []int) {
 	// Open the input file
-	fileName := "input.part1"
-	file, err := os.Open(fileName)
+	file, err := os.Open(fname)
 	if err != nil {
 		fmt.Printf("Error opening file: %v\n", err)
 		return
@@ -34,8 +31,6 @@ func main() {
 
 	// Create scanner
 	scanner := bufio.NewScanner(file)
-
-	var list1, list2 []int
 
 	// Read and process lines
 	for scanner.Scan() {
@@ -54,6 +49,14 @@ func main() {
 
 	sort.Ints(list1)
 	sort.Ints(list2)
+
+	return
+}
+
+func main() {
+	fmt.Println("Starting...")
+
+	list1, list2 := ParseFile("input.test")
 
 	// Calculate the distances
 	totalDist := 0
