@@ -53,9 +53,7 @@ func ParseFile(fname string) (list1, list2 []int) {
 	return
 }
 
-func main() {
-	fmt.Println("Starting...")
-
+func part1() {
 	list1, list2 := ParseFile("input.test")
 
 	// Calculate the distances
@@ -70,4 +68,30 @@ func main() {
 
 	fmt.Println(totalDist)
 
+}
+
+func part2() {
+	list1, list2 := ParseFile("input.test")
+	weights := map[int]int{}
+	for _, v := range list2 {
+		val, exists := weights[v]
+		if !exists {
+			val = 0
+		}
+		weights[v] = val + 1
+	}
+
+	similarity := 0
+	for _, v := range list1 {
+		weight, exists := weights[v]
+		if !exists {
+			continue
+		}
+		similarity += weight * v
+	}
+	fmt.Println(similarity)
+}
+
+func main() {
+	part2()
 }
