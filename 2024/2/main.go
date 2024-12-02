@@ -97,6 +97,42 @@ func part1(fname string) {
 	fmt.Println(count)
 }
 
+func removeElement(nums []int, i int) (retval []int) {
+	retval = append(retval, nums[:i]...)
+	retval = append(retval, nums[i+1:]...)
+	return
+}
+
+func checkAll(nums []int) bool {
+	// First check the whole thing
+	if check(nums) {
+		return true
+	}
+
+	// Now remove numbers one at a time to see if it matches
+	var newList []int
+	for i := 0; i < len(nums); i++ {
+		newList = removeElement(nums, i)
+		if check(newList) {
+			return true
+		}
+	}
+
+	return false
+}
+
+func part2(fname string) {
+	nums := ParseFile(fname)
+
+	count := 0
+	for _, v := range nums {
+		if checkAll(v) {
+			count += 1
+		}
+	}
+	fmt.Println(count)
+}
+
 func main() {
-	part1("input.txt")
+	part2("input.txt")
 }
