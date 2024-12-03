@@ -26,10 +26,12 @@ func ParseFile(fname string) (muls [][]int) {
 	defer file.Close()
 
 	// Create the regex
-	re := regexp.MustCompile(`mul\((\d+),(\d+)\)`)
+	re := regexp.MustCompile(`(mul\((\d+),(\d+)\)|do\(\)|don't\(\))`)
 
 	// Create scanner
 	scanner := bufio.NewScanner(file)
+
+	ok := true
 
 	// Read and process lines
 	for scanner.Scan() {
@@ -37,10 +39,19 @@ func ParseFile(fname string) (muls [][]int) {
 		matches := re.FindAllStringSubmatch(line, -1)
 		if matches != nil {
 			for _, v := range matches {
-				var thingToInsert []int
-				thingToInsert = append(thingToInsert, MustInt(v[1]))
-				thingToInsert = append(thingToInsert, MustInt(v[2]))
-				muls = append(muls, thingToInsert)
+				switch v[0] {
+				case `do()`:
+					ok = true
+				case `don't()`:
+					ok = false
+				default:
+					if ok {
+						var thingToInsert []int
+						thingToInsert = append(thingToInsert, MustInt(v[2]))
+						thingToInsert = append(thingToInsert, MustInt(v[3]))
+						muls = append(muls, thingToInsert)
+					}
+				}
 			}
 		}
 	}
