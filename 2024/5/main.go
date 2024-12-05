@@ -91,6 +91,25 @@ func part1(fname string) {
 	fmt.Println(runningTotal)
 }
 
+func part2(fname string) {
+	rules, updates := ParseFile(fname)
+
+	runningTotal := 0
+	for _, update := range updates {
+		if !checkRules(update, rules) {
+			slices.SortFunc(update, func(a, b int) int {
+				if slices.Contains(rules[a], b) {
+					return 1
+				} else {
+					return -1
+				}
+			})
+			runningTotal += update[(len(update)-1)/2]
+		}
+	}
+	fmt.Println(runningTotal)
+}
+
 func main() {
-	part1("input.txt")
+	part2("input.txt")
 }
