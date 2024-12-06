@@ -4,7 +4,24 @@ import (
 	"bufio"
 	"fmt"
 	"os"
+	"slices"
 )
+
+func deepCopyNestedMap(original map[int]map[int]byte) map[int]map[int]byte {
+	result := make(map[int]map[int]byte)
+
+	for outerKey, outerValue := range original {
+		copiedOuterMap := make(map[int]byte)
+
+		for innerKey, value := range outerValue {
+			copiedOuterMap[innerKey] = value
+		}
+
+		result[outerKey] = copiedOuterMap
+	}
+
+	return result
+}
 
 func ParseFile(fname string) (maze map[int]map[int]bool, pos [2]int) {
 
@@ -132,6 +149,77 @@ func part1(fname string) {
 
 }
 
+func isLoop(maze map[int]map[int]bool, pos [2]int) bool {
+	var direction byte = 'N'
+	visited := make(map[int]map[int]byte)
+	//fmt.Printf("---- Starting ----\n")
+	for {
+		nextPos, nextDirection := takeStep(maze, pos, direction)
+		if _, ok := maze[nextPos[0]][nextPos[1]]; !ok {
+			return false
+		}
+		if _, ok := visited[nextPos[0]]; !ok {
+			visited[nextPos[0]] = make(map[int]byte)
+		}
+		if d, ok := visited[nextPos[0]][nextPos[1]]; !ok {
+			visited[nextPos[0]][nextPos[1]] = nextDirection
+		} else {
+			//fmt.Printf("Checking %s against %s at pos %d,%d...\n", string(nextDirection), string(d), nextPos[0], nextPos[1])
+			if nextDirection == d {
+				return true
+			}
+		}
+		pos = nextPos
+		direction = nextDirection
+	}
+}
+
+func part2(fname string) {
+	maze, pos := ParseFile(fname)
+	firstPos := pos
+
+	visited := make(map[int]map[int]byte)
+	var direction byte = 'N'
+
+	var steps [][2]int
+
+	for {
+		nextPos, nextDirection := takeStep(maze, pos, direction)
+		if _, ok := maze[nextPos[0]][nextPos[1]]; !ok {
+			break
+		}
+		if _, ok := visited[nextPos[0]]; !ok {
+			visited[nextPos[0]] = make(map[int]byte)
+		}
+		if _, ok := visited[nextPos[0]][nextPos[1]]; !ok {
+			visited[nextPos[0]][nextPos[1]] = nextDirection
+		}
+		if !slices.Contains(steps, nextPos) {
+			steps = append(steps, nextPos)
+		}
+		pos = nextPos
+		direction = nextDirection
+	}
+
+	// Now add an obstruction at each point and seeing if it causes a loop
+	total := 0
+	for _, step := range steps {
+		// Add the obstruction
+		maze[step[0]][step[1]] = true
+
+		//fmt.Printf("Checking %d, %d... ", step[0], step[1])
+		if isLoop(maze, [2]int(firstPos[:])) {
+			total++
+		}
+
+		// Remove the obstruction
+		maze[step[0]][step[1]] = false
+	}
+
+	fmt.Println(total)
+
+}
+
 func main() {
-	part1("input.txt")
+	part2("input.txt")
 }
