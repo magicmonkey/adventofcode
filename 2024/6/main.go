@@ -7,22 +7,6 @@ import (
 	"slices"
 )
 
-func deepCopyNestedMap(original map[int]map[int]byte) map[int]map[int]byte {
-	result := make(map[int]map[int]byte)
-
-	for outerKey, outerValue := range original {
-		copiedOuterMap := make(map[int]byte)
-
-		for innerKey, value := range outerValue {
-			copiedOuterMap[innerKey] = value
-		}
-
-		result[outerKey] = copiedOuterMap
-	}
-
-	return result
-}
-
 func ParseFile(fname string) (maze map[int]map[int]bool, pos [2]int) {
 
 	maze = make(map[int]map[int]bool)
@@ -78,9 +62,15 @@ func takeStep(maze map[int]map[int]bool, pos [2]int, direction byte) (nextPos [2
 	switch direction {
 	case 'N':
 		if maze[x][y-1] {
-			nextDirection = 'E'
-			nextPos[0] = x + 1
-			nextPos[1] = y
+			if maze[x+1][y] {
+				nextDirection = 'S'
+				nextPos[0] = x
+				nextPos[1] = y + 1
+			} else {
+				nextDirection = 'E'
+				nextPos[0] = x + 1
+				nextPos[1] = y
+			}
 		} else {
 			nextDirection = 'N'
 			nextPos[0] = x
@@ -88,9 +78,15 @@ func takeStep(maze map[int]map[int]bool, pos [2]int, direction byte) (nextPos [2
 		}
 	case 'E':
 		if maze[x+1][y] {
-			nextDirection = 'S'
-			nextPos[0] = x
-			nextPos[1] = y + 1
+			if maze[x][y+1] {
+				nextDirection = 'W'
+				nextPos[0] = x - 1
+				nextPos[1] = y
+			} else {
+				nextDirection = 'S'
+				nextPos[0] = x
+				nextPos[1] = y + 1
+			}
 		} else {
 			nextDirection = 'E'
 			nextPos[0] = x + 1
@@ -98,9 +94,15 @@ func takeStep(maze map[int]map[int]bool, pos [2]int, direction byte) (nextPos [2
 		}
 	case 'S':
 		if maze[x][y+1] {
-			nextDirection = 'W'
-			nextPos[0] = x - 1
-			nextPos[1] = y
+			if maze[x-1][y] {
+				nextDirection = 'N'
+				nextPos[0] = x
+				nextPos[1] = y - 1
+			} else {
+				nextDirection = 'W'
+				nextPos[0] = x - 1
+				nextPos[1] = y
+			}
 		} else {
 			nextDirection = 'S'
 			nextPos[0] = x
@@ -108,9 +110,15 @@ func takeStep(maze map[int]map[int]bool, pos [2]int, direction byte) (nextPos [2
 		}
 	case 'W':
 		if maze[x-1][y] {
-			nextDirection = 'N'
-			nextPos[0] = x
-			nextPos[1] = y - 1
+			if maze[x][y-1] {
+				nextDirection = 'E'
+				nextPos[0] = x + 1
+				nextPos[1] = y
+			} else {
+				nextDirection = 'N'
+				nextPos[0] = x
+				nextPos[1] = y - 1
+			}
 		} else {
 			nextDirection = 'W'
 			nextPos[0] = x - 1
@@ -157,6 +165,9 @@ func isLoop(maze map[int]map[int]bool, pos [2]int) bool {
 		nextPos, nextDirection := takeStep(maze, pos, direction)
 		if _, ok := maze[nextPos[0]][nextPos[1]]; !ok {
 			return false
+		}
+		if maze[nextPos[0]][nextPos[1]] {
+			panic("Double turn needed")
 		}
 		if _, ok := visited[nextPos[0]]; !ok {
 			visited[nextPos[0]] = make(map[int]byte)
@@ -208,7 +219,7 @@ func part2(fname string) {
 		maze[step[0]][step[1]] = true
 
 		//fmt.Printf("Checking %d, %d... ", step[0], step[1])
-		if isLoop(maze, [2]int(firstPos[:])) {
+		if isLoop(maze, firstPos) {
 			total++
 		}
 
