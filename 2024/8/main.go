@@ -96,6 +96,69 @@ func checkPair(aerial1, aerial2 Point, maxY, maxX int) (results []Point) {
 	return
 }
 
+func checkPair2(aerial1, aerial2 Point, maxY, maxX int) (results []Point) {
+	var antinode Point
+
+	xDiff := aerial1.x - aerial2.x
+	if xDiff < 0 {
+		xDiff *= -1
+	}
+	yDiff := aerial1.y - aerial2.y
+	if yDiff < 0 {
+		yDiff *= -1
+	}
+
+	// Direction 1
+	antinode = aerial1
+	results = append(results, antinode)
+	for {
+		if aerial1.x < aerial2.x {
+			antinode.x -= xDiff
+		} else {
+			antinode.x += xDiff
+		}
+		if aerial1.y < aerial2.y {
+			antinode.y -= yDiff
+		} else {
+			antinode.y += yDiff
+		}
+
+		// Check if antinode1 is off the map
+		if antinode.x < 0 || antinode.x > maxX || antinode.y < 0 || antinode.y > maxY {
+			// Off the map
+			break
+		} else {
+			results = append(results, antinode)
+		}
+	}
+
+	// Direction 2
+	antinode = aerial2
+	results = append(results, antinode)
+	for {
+		if aerial1.x < aerial2.x {
+			antinode.x += xDiff
+		} else {
+			antinode.x -= xDiff
+		}
+		if aerial1.y < aerial2.y {
+			antinode.y += yDiff
+		} else {
+			antinode.y -= yDiff
+		}
+
+		// Check if antinode1 is off the map
+		if antinode.x < 0 || antinode.x > maxX || antinode.y < 0 || antinode.y > maxY {
+			// Off the map
+			break
+		} else {
+			results = append(results, antinode)
+		}
+	}
+
+	return
+}
+
 func checkAerials(aerials []Point, maxY, maxX int) (results []Point) {
 	var combinations [][2]Point
 	for i := 0; i < len(aerials); i++ {
@@ -106,6 +169,21 @@ func checkAerials(aerials []Point, maxY, maxX int) (results []Point) {
 
 	for _, combo := range combinations {
 		res := checkPair(combo[0], combo[1], maxY, maxX)
+		results = append(results, res...)
+	}
+	return
+}
+
+func checkAerials2(aerials []Point, maxY, maxX int) (results []Point) {
+	var combinations [][2]Point
+	for i := 0; i < len(aerials); i++ {
+		for j := i + 1; j < len(aerials); j++ {
+			combinations = append(combinations, [2]Point{aerials[i], aerials[j]})
+		}
+	}
+
+	for _, combo := range combinations {
+		res := checkPair2(combo[0], combo[1], maxY, maxX)
 		results = append(results, res...)
 	}
 	return
@@ -128,6 +206,23 @@ func part1(fname string) {
 
 }
 
+func part2(fname string) {
+	allAerials, maxY, maxX := ParseFile(fname)
+
+	locations := make(map[Point]bool)
+
+	for _, aerials := range allAerials {
+		antinodes := checkAerials2(aerials, maxY, maxX)
+		for _, antinode := range antinodes {
+			if _, ok := locations[antinode]; !ok {
+				locations[antinode] = true
+			}
+		}
+	}
+	fmt.Println(len(locations))
+
+}
+
 func main() {
-	part1("input.txt")
+	part2("input.txt")
 }
